@@ -1,4 +1,4 @@
-     LIST OF EXPERIMENTS
+ LIST OF EXPERIMENTS
 
 1) Multi User Chat Server using TCP
    
