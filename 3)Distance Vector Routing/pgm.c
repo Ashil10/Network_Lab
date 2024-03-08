@@ -1,5 +1,3 @@
-// Distance Vector Routing Algorithm
-
 #include <stdio.h>
 struct node
 {
@@ -13,9 +11,6 @@ int main()
     printf("\nEnter the number of nodes : ");
     scanf("%d", &n);
     printf("\nEnter the cost matrix :\n");
-    for(int y=0;y<10;y++){
-        int k;
-    }
     for (i = 0; i < n; i++)
         for (j = 0; j < n; j++)
         {
