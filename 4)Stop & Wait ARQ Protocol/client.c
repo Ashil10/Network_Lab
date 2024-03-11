@@ -33,7 +33,7 @@ int main()
 {
 	int sockfd;
 	struct sockaddr_in serverAddress;
-	int n,e,i,j,p=0,ack,exp=0,m;
+	int n,e,i,j,p=0,ack,exp=1,m;
 	char msg1[MAXSZ],msg2[MAXSZ],msg3[MAXSZ],q,w;
 	char del='$';
 	struct Frame *frame=(struct Frame*)malloc(30*sizeof(struct Frame));
@@ -68,7 +68,7 @@ int main()
 				frame->msg=msg3;
 				frame->len=strlen(msg3);
 				printf("\nReceived Frame %d\n",frame->seq);
-				ack=(frame->seq+1)%2;
+				ack=(frame->seq+1);
 				sprintf(msg1,"%d",ack);
 				m=strlen(msg1)+1;
 				srand(time(NULL));
@@ -76,16 +76,12 @@ int main()
 				sleep(sl+1);
 				send(sockfd,msg1,m,0);
 				printf("Ack %d sent\n",ack);
-				exp=(exp+1)%2;
+				exp=(exp+1);
 				count++;
 			}
-			else
-			{
-				printf("\nDuplicate Frame Received\n");
-			}
+			
 		}
 		if(n==0) {printf("\nReceiver Exit\n"); break;}
 	}
 	return 0;
 }
-

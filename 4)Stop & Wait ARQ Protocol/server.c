@@ -30,10 +30,11 @@ struct Frame* makeframes()
 	for(i=0;i<30;i++)
 	{
 		fr[i].type=DATA;
-		fr[i].seq=(seqno+1)%2;
+		fr[i].seq=(seqno);
 		fr[i].msg="$Mbdv,gl;hpoihewadbjlszncx.mvc,bg;/nh''wa?>SF<xdcfvgl;kjhgfdsasedrfg$";
 		fr[i].len=strlen(fr->msg);
-		seqno=fr[i].seq;
+		seqno=fr[i].seq+1;
+		
 	}
 	return fr;
 }
@@ -79,7 +80,7 @@ int main()
 				if(k>0)
 				{
 					printf("\nSent Frame %d\n",f.seq);
-					expAck=((f.seq+1))%2;
+					expAck=((f.seq+1));
 					n=recv(newsockfd,msg1,MAXSZ,0);
 					if(n<=0) printf("No Ack Received\n");
 					if(n>0)
