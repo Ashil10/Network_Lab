@@ -48,7 +48,7 @@ int main()
 	int n,clientAdrLen,k;
 	char msg[MAXSZ],msg1[MAXSZ];
 	pid_t pid;
-	timeout.tv_sec=1;
+	timeout.tv_sec=2;
 	timeout.tv_usec=0;
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	memset(&serverAddress,0,sizeof(serverAddress));
