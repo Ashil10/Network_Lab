@@ -1,6 +1,5 @@
 **Network Lab Experiments**
 
-Welcome to the Network Lab GitHub repository! Below are the experiments designed to help you grasp networking concepts effectively.
 
 ### Experiment List
 
