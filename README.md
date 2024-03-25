@@ -1,18 +1,21 @@
 **Network Lab Experiments**
 
+Welcome to the Network Lab GitHub repository! Below are the experiments designed to help you grasp networking concepts effectively.
+
 ### Experiment List
 
-1. **_Multi-User Chat Server using TCP_**
-   - **_Description:_** Build a chat server using TCP to allow multiple users to communicate simultaneously.
+1. ***Multi-User Chat Server using TCP***
+   - Build a chat server using TCP to allow multiple users to communicate simultaneously.
 
-2. **_Concurrent Time Server using UDP_**
-   - **_Description:_** Develop a time server using UDP that serves multiple client requests concurrently.
+2. ***Concurrent Time Server using UDP***
+   - Develop a time server using UDP that serves multiple client requests concurrently.
 
-3. **_Distance Vector Routing_**
-   - **_Description:_** Study routing algorithms where routers exchange information based on distance to destinations.
+3. ***Distance Vector Routing***
+   - Study routing algorithms where routers exchange information based on distance to destinations.
 
-4. **_Stop and Wait ARQ Protocol_**
-   - **_Description:_** Implement a protocol ensuring reliable data transmission by acknowledging each packet sent.
+4. ***Stop and Wait ARQ Protocol***
+   - Implement a protocol ensuring reliable data transmission by acknowledging each packet sent.
 
-5. **_Go Back N ARQ Protocol_**
-   - **_Description:_** Implement a protocol enabling reliable data transmission with sliding windows for efficient error recovery.
+5. ***Go Back N ARQ Protocol***
+   - Implement a protocol enabling reliable data transmission with sliding windows for efficient error recovery.
+
