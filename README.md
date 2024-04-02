@@ -1,6 +1,3 @@
-**Network Lab Experiments**
-
-
 ### Experiment List
 
 1. ***Multi-User Chat Server using TCP***
@@ -18,3 +15,5 @@
 5. ***Go Back N ARQ Protocol***
    - Implement a protocol enabling reliable data transmission with sliding windows for efficient error recovery.
 
+6. ***Concurrent File Server***
+   - Implement a server-client architecture where the server concurrently reads a text file upon client request and sends the response back to the client.
