@@ -1,129 +1,104 @@
 #include <stdio.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <netinet/in.h>
-#include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-int main()
+#define MAX 80
+#define PORT 8080
+#define SA struct sockaddr
+struct timeval timeout;
+void func(int connfd)
 {
-    int s_sock, c_sock;
-    s_sock = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in server, other;
-    memset(&server, 0, sizeof(server));
-    memset(&other, 0, sizeof(other));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(9009);
-    server.sin_addr.s_addr = INADDR_ANY;
-    socklen_t add;
-    if (bind(s_sock, (struct sockaddr *)&server, sizeof(server)) == -1)
+    char buff[MAX];
+    int f, c, ack, next = 0;
+    while (1)
     {
-        printf("Binding failed\n");
-        return 0;
+        sleep(1);
+        bzero(buff, MAX);
+        recv(connfd, buff, MAX, 0);
+        if (strcmp("Exit", buff) == 0)
+        {
+            printf("Exit\n");
+            break;
+        }
+        f = atoi(buff);
+        if (f != next)
+        {
+            printf("Frame %d discarded\nAcknowledgement sent: %d\n", f, ack);
+            bzero(buff, MAX);
+            snprintf(buff, sizeof(buff), "%d", ack);
+            send(connfd, buff, sizeof(buff), 0);
+            continue;
+        }
+        c = rand() % 3;
+        switch (c)
+        {
+            case 0:
+                // printf("Frame %d not received\n",f);
+                break;
+            case 1:
+                ack = f;
+                sleep(2);
+                printf("Frame %d received\nAcknowledement sent: %d\n", f, ack);
+                bzero(buff, MAX);
+                snprintf(buff, sizeof(buff), "%d", ack);
+                send(connfd, buff, sizeof(buff), 0);
+                next = ack + 1;
+                break;
+            case 2:
+                ack = f;
+                printf("Frame %d received\nAcknowledement sent: %d\n", f, ack);
+                bzero(buff, MAX);
+                snprintf(buff, sizeof(buff), "%d", ack);
+                send(connfd, buff, sizeof(buff), 0);
+                next = ack + 1;
+                break;
+        }
     }
-    printf("\tServer Up\n Go back n (n=3) used to send 10 messages..\n\n");
-    listen(s_sock, 10);
-    add = sizeof(other);
-    c_sock = accept(s_sock, (struct sockaddr *)&other, &add);
-    time_t t1, t2;
-    char msg[50] = "Message ";
-    char buff[50];
-    int flag = 0;
-    fd_set set1, set2, set3;
-    struct timeval timeout1, timeout2, timeout3;
-    int rv1, rv2, rv3;
-
-    int i = -1;
-
-qq:
-
-    i = i + 1;
-    bzero(buff, sizeof(buff));
-    char buff2[60];
-    bzero(buff2, sizeof(buff2));
-    strcpy(buff2, msg);
-    buff2[strlen(buff2)] = i + '0';
-    buff2[strlen(buff2)] = '\0';
-    printf("Message sent to client: %s\n\n", buff2);
-    write(c_sock, buff2, sizeof(buff2));
-    usleep(1000);
-    i = i + 1;
-    bzero(buff2, sizeof(buff2));
-    strcpy(buff2, msg);
-    buff2[strlen(msg)] = i + '0';
-    printf("Message sent to client: %s\n\n", buff2);
-    write(c_sock, buff2, sizeof(buff2));
-    i = i + 1;
-    usleep(1000);
-
-qqq:
-
-    bzero(buff2, sizeof(buff2));
-    strcpy(buff2, msg);
-    buff2[strlen(msg)] = i + '0';
-    printf("Message sent to client: %s\n\n", buff2);
-    write(c_sock, buff2, sizeof(buff2));
-
-    FD_ZERO(&set1);
-    FD_SET(c_sock, &set1);
-    timeout1.tv_sec = 2;
-    timeout1.tv_usec = 0;
-
-    rv1 = select(c_sock + 1, &set1, NULL, NULL, &timeout1);
-    if (rv1 == -1)
-        perror("select error ");
-    else if (rv1 == 0)
+}
+void main()
+{
+    int sockfd, connfd, len;
+    struct sockaddr_in servaddr, cli;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1)
     {
-        printf("Timeout occurred! Sending from %d again..\n\n", i - 2);
-        i = i - 3;
-        goto qq;
+        printf("Socket creation failed\n");
+        exit(0);
     }
     else
+        printf("Socket successfully created\n");
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(PORT);
+    if ((bind(sockfd, (SA *)&servaddr, sizeof(servaddr))) != 0)
     {
-        read(c_sock, buff, sizeof(buff));
-        printf("Message from client: %s\n\n", buff);
-        i++;
-        if (i <= 9)
-            goto qqq;
-    }
-
-qq2:
-
-    FD_ZERO(&set2);
-    FD_SET(c_sock, &set2);
-    timeout2.tv_sec = 3;
-    timeout2.tv_usec = 0;
-    rv2 = select(c_sock + 1, &set2, NULL, NULL, &timeout2);
-    if (rv2 == -1)
-        perror("select error ");
-    else if (rv2 == 0)
-    {
-        printf("Timeout occurred! Sending from %d again..\n\n", i - 2);
-        i = i - 2;
-        bzero(buff2, sizeof(buff2));
-        strcpy(buff2, msg);
-        buff2[strlen(buff2)] = i + '0';
-        write(c_sock, buff2, sizeof(buff2));
-        usleep(1000);
-        i++;
-        bzero(buff2, sizeof(buff2));
-        strcpy(buff2, msg);
-        buff2[strlen(buff2)] = i + '0';
-        write(c_sock, buff2, sizeof(buff2));
-        goto qq2;
+        printf("socket bind failed\n");
+        exit(0);
     }
     else
+        printf("Socket successfully binded\n");
+    if ((listen(sockfd, 5)) != 0)
     {
-        read(c_sock, buff, sizeof(buff));
-        printf("Message from client: %s\n\n", buff);
-        bzero(buff, sizeof(buff));
-        read(c_sock, buff, sizeof(buff));
-        printf("Message from client: %s\n\n", buff);
+        printf("Listen failed\n");
+        exit(0);
     }
-    close(c_sock);
-    close(s_sock);
-    return 0;
+    else
+        printf("Server listening\n");
+    len = sizeof(cli);
+    connfd = accept(sockfd, (SA *)&cli, &len);
+    if (connfd < 0)
+    {
+        printf("Server accept failed\n");
+        exit(0);
+    }
+    else
+        printf("Server accept the client\n");
+    func(connfd);
+    close(sockfd);
 }

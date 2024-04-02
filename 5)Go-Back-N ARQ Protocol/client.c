@@ -1,54 +1,104 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<sys/socket.h>
-#include<sys/types.h>
-#include<netinet/in.h>
-#include<sys/time.h>
-#include<sys/wait.h>
-#include<string.h>
-#include<unistd.h>
-#include<arpa/inet.h>
-int main()
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#define MAX 80
+#define PORT 8080
+#define SA struct sockaddr
+struct timeval timeout;
+void func(int sockfd, int nf, int ws)
 {
-    int c_sock;
-    c_sock = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in client;
-    memset(&client, 0, sizeof(client));
-    client.sin_family = AF_INET;
-    client.sin_port = htons(9009);
-    client.sin_addr.s_addr = inet_addr("127.0.0.1");
-	
-    if(connect(c_sock, (struct sockaddr*)&client, sizeof(client)) == -1)
+    char buff[MAX];
+    int ack, i = 0, n, k, w1 = 0, w2 = ws - 1, j, flag = 0;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout)) < 0)
+        perror("setsockopt(SO_RCVTIMEO) failed");
+
+    for (i = 0; i < nf && i <= w2; i++)
     {
-        printf("Connection failed");
-        return 0;
+        bzero(buff, sizeof(buff));
+        snprintf(buff, sizeof(buff), "%d", i);
+        k = send(sockfd, buff, sizeof(buff), 0);
+        printf("Frame %d sent\n", i);
     }
-    
-    printf("\nClient started!\t(Individual acknowledgement scheme)\n\n");
-    char msg1[50]="Acknowledgement of ";
-    char msg2[50];
-    char buff[100];
-    int flag=1,flg=1;
-    for(int i=0;i<=9;i++)
+    while (1)
     {
-    	flg=1;
-    	bzero(buff,sizeof(buff));
-    	bzero(msg2,sizeof(msg2));
-    	int n=read(c_sock, buff, sizeof(buff));
-    	if(buff[strlen(buff)-1]!=i+'0')
-    	{
-        	printf("Discarded frame received since expected frame is %d.\n\n",i);
-        	i--;
+        if (w2 - w1 != ws - 1 && flag == 0 && i != nf)
+        {
+            bzero(buff, sizeof(buff));
+            snprintf(buff, sizeof(buff), "%d", i);
+            k = send(sockfd, buff, sizeof(buff), 0);
+            printf("Frame %d sent\n", i);
+            w2++;
+            i++;
+        }
+        flag = 0;
+        bzero(buff, sizeof(buff));
+        n = recv(sockfd, buff, MAX, 0);
+        ack = atoi(buff);
+        if (n > 0)
+        {
+            if (ack + 1 == nf)
+            {
+                printf("Acknowlegement received: %d\nExit\n", ack);
+                bzero(buff, sizeof(buff));
+                strcpy(buff, "Exit");
+                k = send(sockfd, buff, sizeof(buff), 0);
+                break;
+            }
+            if (ack == w1)
+            {
+                w1++;
+                printf("Acknowlegement received: %d\n", ack);
+            }
         }
         else
         {
-        	printf("Message received from server: %s\n",buff);
-        	printf("Acknowledgement sent for message %c.\n\n",buff[strlen(buff)-1]);
-        	strcpy(msg2,msg1);
-        	msg2[strlen(msg2)]=i+'0';
-        	write(c_sock,msg2, sizeof(msg2));
+            printf("Acknowledgement not received for %d\nResending frames\n", w1);
+            for (j = w1; j < nf && j < w1 + ws; j++)
+            {
+                bzero(buff, sizeof(buff));
+                snprintf(buff, sizeof(buff), "%d", j);
+                k = send(sockfd, buff, sizeof(buff), 0);
+                printf("Frame %d sent\n", j);
+            }
+            flag = 1;
         }
-     }
-     close(c_sock);
-     return 0;
+    }
+}
+void main()
+{
+    int sockfd, connfd, f, w;
+    struct sockaddr_in servaddr, cli;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1)
+    {
+        printf("Socket creation failed\n");
+        exit(0);
+    }
+    else
+        printf("Socket successfully created\n");
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port = htons(PORT);
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+    if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) != 0)
+    {
+        printf("Connection with the server failed\n");
+        exit(0);
+    }
+    else
+        printf("Connected to the server\n");
+    printf("Enter the number of frames: ");
+    scanf("%d", &f);
+    printf("Enter the window size: ");
+    scanf("%d", &w);
+    func(sockfd, f, w);
+    close(sockfd);
 }
