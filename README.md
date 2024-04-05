@@ -17,3 +17,7 @@
 
 6. ***Concurrent File Server***
    - Implement a server-client architecture where the server concurrently reads a text file upon client request and sends the response back to the client.
+
+7.***Leaky Bucket Algorithm***
+   - Implement the Leaky Bucket Algorithm to control network congestion by regulating data flow through a constant outflow rate from a buffer.
+
