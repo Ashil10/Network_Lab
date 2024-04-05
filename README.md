@@ -1,4 +1,4 @@
-### Experiment List
+### Experiment List CSL 332
 
 1. ***Multi-User Chat Server using TCP***
    - Build a chat server using TCP to allow multiple users to communicate simultaneously.
