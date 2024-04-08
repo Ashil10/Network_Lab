@@ -1,102 +1,119 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdlib.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 
-#define PORT 8080
-#define MAX_PENDING_CONNECTIONS 5
-#define BUFFER_SIZE 1024
+#define PORT 4444
+#define SIZE 1024
 
-void handle_client(int client_socket) {
-    char buffer[BUFFER_SIZE];
-    int pid = getpid();
-
-    // Receive filename from client
-    memset(buffer, 0, BUFFER_SIZE);
-    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
-    if (bytes_received < 0) {
-        perror("Error in receiving filename from client");
-        close(client_socket);
-        return;
-    }
-
-    // Open the requested file
-    FILE *file = fopen(buffer, "rb");
-    if (file == NULL) {
-        // File not found
-        snprintf(buffer, BUFFER_SIZE, "File not found on server. Process ID: %d", pid);
-        send(client_socket, buffer, strlen(buffer), 0);
-    } else {
-        // File found, send the file to client
-        while ((bytes_received = fread(buffer, 1, BUFFER_SIZE, file)) > 0) {
-            send(client_socket, buffer, bytes_received, 0);
-        }
-        fclose(file);
-    }
-    
-    close(client_socket);
+void sendFile(FILE *fp,int sockfd)
+{
+	int n;
+	char buffer[SIZE];
+	char msg[50]="\nServer Process ID: ";
+	bzero(buffer,SIZE);
+	while( fgets(buffer,SIZE,fp) != NULL)
+	{
+		if( send(sockfd,buffer,sizeof(buffer),0) == -1)
+		{
+			break;
+		}
+		bzero(buffer,SIZE);
+	}
+	bzero(buffer,SIZE);
+	int pid = getpid();
+	char *mypid = malloc(6);
+	sprintf(mypid,"%d",pid);
+	strcpy(buffer,msg);
+	strcat(buffer,mypid);
+	send(sockfd,buffer,sizeof(buffer),0);
+	bzero(buffer,SIZE);
+	bzero(mypid,6);
+	fclose(fp);
 }
 
-int main() {
-    int server_socket, client_socket;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_len = sizeof(client_addr);
-
-    // Create socket
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket < 0) {
-        perror("Error in creating socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // Initialize server address structure
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
-
-    // Bind socket to the address
-    if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Error in binding");
-        exit(EXIT_FAILURE);
-    }
-
-    // Listen for connections
-    if (listen(server_socket, MAX_PENDING_CONNECTIONS) < 0) {
-        perror("Error in listening");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Server listening on port %d...\n", PORT);
-
-    while (1) {
-        // Accept client connection
-        client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_len);
-        if (client_socket < 0) {
-            perror("Error in accepting connection");
-            exit(EXIT_FAILURE);
-        }
-
-        // Fork a new process to handle the client
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("Error in forking");
-            exit(EXIT_FAILURE);
-        } else if (pid == 0) {
-            // Child process
-            close(server_socket);
-            handle_client(client_socket);
-            exit(EXIT_SUCCESS);
-        } else {
-            // Parent process
-            close(client_socket);
-        }
-    }
-
-    close(server_socket);
-    return 0;
+int main()
+{
+	int sockfd, clientSocket, pid, cnt=0;
+	struct sockaddr_in serverAddr, cliAddr;
+	socklen_t addr_size;
+	pid_t childpid;
+	char fname[50],buffer[SIZE],msg[100]="Requested file not found.\n\nServer Process ID: ";
+	FILE *fp;
+	bzero(fname,sizeof(fname));
+	bzero(buffer,sizeof(buffer));
+	
+	sockfd = socket(AF_INET,SOCK_STREAM,0);
+	if(sockfd<0)
+	{
+		printf("Error in connection.\n");
+		exit(1);
+	}
+	printf("[+]Server socket created..\n");
+	memset(&serverAddr,'\0',sizeof(serverAddr));
+	serverAddr.sin_family=AF_INET;
+	serverAddr.sin_port=htons(PORT);
+	serverAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	if( bind(sockfd,(struct sockaddr*)&serverAddr,sizeof(serverAddr)) < 0 )
+	{
+		perror("Bind error");
+		exit(1);
+	}
+	if( listen(sockfd,10)==0 )
+	{
+		printf("[+]Server listening..\n");
+	}
+	while(1)
+	{
+		clientSocket = accept(sockfd,(struct sockaddr*)&cliAddr, &addr_size);
+		if(clientSocket < 0)
+		{
+			//perror("Accept error");
+			break;
+		}
+		printf("\n[+]Connection accepted from %s:%d\n",inet_ntoa(cliAddr.sin_addr),ntohs(cliAddr.sin_port));
+		printf("[+]Client(s) connected: %d\n",++cnt);
+		if( (childpid=fork()) == 0 )
+		{
+			close(sockfd);
+			if( recv(clientSocket, fname, 50, 0) < 0)
+			{
+				perror("Error in receiving data from client");
+				break;
+			}
+			if( access(fname,F_OK) == 0)
+			{
+				printf("[+]Requested file found..\n");
+				fp=fopen(fname,"r");
+				sendFile(fp,clientSocket);
+				bzero(fname,sizeof(fname));
+				printf("[+]Requested file sent to client successfully..\n");
+			}
+			else
+			{
+				printf("[+]Requested file not found..\n");
+				bzero(buffer,SIZE);
+				int pid = getpid();
+				char *mypid = malloc(6);
+				sprintf(mypid,"%d",pid);
+				strcpy(buffer,msg);
+				strcat(buffer,mypid);
+				send(clientSocket,buffer,sizeof(buffer),0);
+				bzero(fname,sizeof(fname));
+				bzero(buffer,SIZE);
+				bzero(mypid,6);
+			}
+		}
+		close(clientSocket);
+	}
+	close(clientSocket);
+	return 0;
 }
+
 

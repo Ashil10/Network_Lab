@@ -1,67 +1,74 @@
+
+//author :- kiran S Baliga
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdlib.h>
 #include <netinet/in.h>
-#include <netdb.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 
-#define PORT 8080
-#define BUFFER_SIZE 1024
+#define PORT 4444
+#define SIZE 1024
 
-int main() {
-    int client_socket;
-    struct sockaddr_in server_addr;
-    struct hostent *server;
-
-    char buffer[BUFFER_SIZE];
-
-    // Create socket
-    client_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_socket < 0) {
-        perror("Error in creating socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // Get server IP address
-    server = gethostbyname("localhost");
-    if (server == NULL) {
-        perror("Error in resolving host");
-        exit(EXIT_FAILURE);
-    }
-
-    // Initialize server address structure
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, server->h_length);
-    server_addr.sin_port = htons(PORT);
-
-    // Connect to server
-    if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Error in connecting to server");
-        exit(EXIT_FAILURE);
-    }
-
-    // Get filename from user
-    printf("Enter filename: ");
-    fgets(buffer, BUFFER_SIZE, stdin);
-    buffer[strcspn(buffer, "\n")] = 0;
-
-    // Send filename to server
-    send(client_socket, buffer, strlen(buffer), 0);
-
-    // Receive response from server
-    memset(buffer, 0, BUFFER_SIZE);
-    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
-    if (bytes_received < 0) {
-        perror("Error in receiving response from server");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Response from server: %s\n", buffer);
-
-    close(client_socket);
-
-    return 0;
+void writeFile(int sockfd)
+{
+	int n;
+	FILE *fp;
+	char *fname = "output.txt";
+	char buffer[SIZE];
+	fp=fopen(fname,"w");
+	while(1)
+	{
+		n=recv(sockfd,buffer,SIZE,0);
+		if(n<=0)
+		{
+			break;
+		}
+		fprintf(fp,"%s",buffer);
+		printf("%s",buffer);
+		bzero(buffer,SIZE);
+	}
+	printf("\n\nFILE TRANSFER COMPLETE!\n");
+	fclose(fp);
+	return;
 }
 
+int main()
+{
+	int clientSocket;
+	struct sockaddr_in serverAddr;
+	char buffer[SIZE];
+	char fname[50];
+	clientSocket = socket(AF_INET,SOCK_STREAM,0);
+	if( clientSocket < 0)
+	{
+		perror("Socket error");
+		exit(1);
+	}
+	printf("[+]Client socket created..\n");
+	memset(&serverAddr,'\0',sizeof(serverAddr));
+	bzero(buffer,SIZE);
+	bzero(fname,50);
+	serverAddr.sin_family=AF_INET;
+	serverAddr.sin_port=htons(PORT);
+	serverAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+	if( connect(clientSocket,(struct sockaddr*)&serverAddr,sizeof(serverAddr)) < 0 )
+	{
+		perror("Connect error");
+		exit(1);
+	}
+	printf("[+]Connected to server..\n\n");
+	printf("Input the name of the file you want to request to server:-\n");
+	scanf("%[^\n]%*c",fname);
+	send(clientSocket,fname,sizeof(fname),0);
+	printf("\n");
+	writeFile(clientSocket);
+	close(clientSocket);
+	return 0;
+
+}
