@@ -19,6 +19,6 @@
 6. [***Concurrent File System***](https://github.com/Ashil10/Network_Lab/tree/main/6%29Concurrent%20File%20Server)
    - Implement a server-client architecture where the server concurrently reads a text file upon client request and sends the response back to the client.
 
-7. ***Leaky Bucket Algorithm***
+7. [***Leaky Bucket Congestion Control***](https://github.com/Ashil10/Network_Lab/tree/main/9)Leaky%20Bucket%20Congestion%20Control)
    - Implement the Leaky Bucket Algorithm to control network congestion by regulating data flow through a constant outflow rate from a buffer.
 
