@@ -1,6 +1,4 @@
 
-//author :- kiran S Baliga
-
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
