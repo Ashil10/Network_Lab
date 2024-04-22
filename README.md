@@ -16,7 +16,7 @@
 5. [***Go Back N ARQ Protocol***](https://github.com/Ashil10/Network_Lab/tree/main/5%29Go-Back-N%20ARQ%20Protocol)
    - Implement a protocol enabling reliable data transmission with sliding windows for efficient error recovery.
 
-6. [***Concurrent File System***](https://github.com/Ashil10/Network_Lab/tree/main/6%29Concurrent%20File%20Server)
+6. [***Concurrent File System***](https://github.com/Ashil10/Network_Lab/tree/main/6/Concurrent%20File%20System)
    - Implement a server-client architecture where the server concurrently reads a text file upon client request and sends the response back to the client.
 
 7. [***Leaky Bucket Congestion Control***](https://github.com/Ashil10/Network_Lab/tree/main/7%29Leaky%20Bucket%20Congestion%20Control)
